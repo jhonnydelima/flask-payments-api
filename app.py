@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from repository.database import db
 from models.payment import Payment
 from datetime import datetime, timedelta
@@ -67,6 +67,13 @@ def get_payment_pix(payment_id):
     }
   }
   return jsonify(response), 200
+
+@app.route('/payments/pix/qr_code/<file_name>', methods=['GET'])
+def get_qr_code_image(file_name):
+  try:
+    return send_file(f'static/img/{file_name}.png', mimetype='image/png')
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
   app.run(debug=True)
