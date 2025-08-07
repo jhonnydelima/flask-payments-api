@@ -4,6 +4,7 @@ from models.payment import Payment
 from datetime import datetime, timedelta
 from utils.money_utils import to_small_unit, from_small_unit
 from decimal import Decimal
+from payments.pix import Pix
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -19,6 +20,9 @@ def create_payment_pix():
     amount = to_small_unit(Decimal(data['amount']))
     expiration_date = datetime.now() + timedelta(minutes=30)
     new_payment = Payment(amount=amount, expiration_date=expiration_date)
+    pix_payment = Pix().create_payment()
+    new_payment.bank_payment_id = pix_payment['bank_payment_id']
+    new_payment.qr_code = pix_payment['qr_code_path']
     db.session.add(new_payment)
     db.session.commit()
   except Exception as e:
@@ -30,15 +34,24 @@ def create_payment_pix():
       "payment": new_payment.to_dict(),
     }), 201
 
-@app.route('/payments/pix/confirmation', methods=['POST'])
-def confirm_payment_pix():
-  # Here you would implement the logic to confirm a PIX payment
-  # For now, we will return a mock response
-  response = {
-    "status": "success",
-    "message": "PIX payment confirmed successfully"
-  }
-  return jsonify(response), 200
+@app.route('/payments/pix/confirmation/<int:payment_id>', methods=['POST'])
+def confirm_payment_pix(payment_id):
+  if not payment_id:
+    return jsonify({"error": "Invalid payment ID"}), 400
+  try:
+    payment = Payment.query.get(payment_id)
+    if not payment:
+      return jsonify({"error": "Payment not found"}), 404
+    payment.paid = True
+    db.session.commit()
+  except Exception as e:
+    return jsonify({"error": str(e)}), 500
+  else:
+    return jsonify({
+      "status": "success",
+      "message": "PIX payment confirmed successfully",
+      "payment": payment.to_dict(),
+    }), 200
 
 @app.route('/payments/pix/<int:payment_id>', methods=['GET'])
 def get_payment_pix(payment_id):

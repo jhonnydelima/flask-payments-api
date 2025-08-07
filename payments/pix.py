@@ -6,7 +6,7 @@ class Pix:
     pass
 
   def create_payment(self):
-    bank_payment_id = uuid4()
+    bank_payment_id = str(uuid4())
     hash_payment = f'hash_payment_{bank_payment_id}'
     qrcode_path = f'static/img/qrcode_{bank_payment_id}'
     qrcode_img = qrcode.make(hash_payment)
