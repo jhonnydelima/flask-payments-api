@@ -207,4 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # Static
-static
+static/img
+
+.DS_Store
