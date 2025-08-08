@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, render_template
 from repository.database import db
 from models.payment import Payment
 from datetime import datetime, timedelta
@@ -54,19 +54,8 @@ def confirm_payment_pix(payment_id):
     }), 200
 
 @app.route('/payments/pix/<int:payment_id>', methods=['GET'])
-def get_payment_pix(payment_id):
-  # Here you would implement the logic to retrieve a PIX payment by ID
-  # For now, we will return a mock response
-  response = {
-    "status": "success",
-    "message": f"Retrieved PIX payment with ID {payment_id}",
-    "data": {
-      "payment_id": payment_id,
-      "amount": 100.00,
-      "currency": "BRL"
-    }
-  }
-  return jsonify(response), 200
+def get_payment_pix_page(payment_id):
+  return render_template('payment.html')
 
 @app.route('/payments/pix/qr_code/<file_name>', methods=['GET'])
 def get_qr_code_image(file_name):
