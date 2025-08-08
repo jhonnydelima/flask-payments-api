@@ -11,6 +11,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'SECRET_KEY_12345'
 db.init_app(app)
 
+APP_HOST = 'http://127.0.0.1:5000'
+
 @app.route('/payments/pix', methods=['POST'])
 def create_payment_pix():
   data = request.get_json()
@@ -22,7 +24,7 @@ def create_payment_pix():
     new_payment = Payment(amount=amount, expiration_date=expiration_date)
     pix_payment = Pix().create_payment()
     new_payment.bank_payment_id = pix_payment['bank_payment_id']
-    new_payment.qr_code = pix_payment['qr_code_path']
+    new_payment.qr_code = pix_payment['qr_code']
     db.session.add(new_payment)
     db.session.commit()
   except Exception as e:
@@ -55,7 +57,16 @@ def confirm_payment_pix(payment_id):
 
 @app.route('/payments/pix/<int:payment_id>', methods=['GET'])
 def get_payment_pix_page(payment_id):
-  return render_template('payment.html')
+  payment = Payment.query.get(payment_id)
+  if not payment:
+    return render_template('404.html')
+  template = 'payment.html' if not payment.paid else 'confirmed_payment.html'
+  return render_template(
+    template,
+    payment_id=payment_id,
+    amount=from_small_unit(payment.amount),
+    qr_code_url=f"{APP_HOST}/payments/pix/qr_code/{payment.qr_code}",
+  )
 
 @app.route('/payments/pix/qr_code/<file_name>', methods=['GET'])
 def get_qr_code_image(file_name):
