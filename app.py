@@ -38,14 +38,21 @@ def create_payment_pix():
       "payment": new_payment.to_dict(),
     }), 201
 
-@app.route('/payments/pix/confirmation/<int:payment_id>', methods=['POST'])
-def confirm_payment_pix(payment_id):
-  if not payment_id:
-    return jsonify({"error": "Invalid payment ID"}), 400
+@app.route('/payments/pix/confirmation', methods=['POST'])
+def confirm_payment_pix():
+  data = request.get_json()
+  bank_payment_id = data.get('bank_payment_id')
+  if not bank_payment_id or not data.get('amount'):
+    return jsonify({"error": "Invalid payment data"}), 400
   try:
-    payment = Payment.query.get(payment_id)
-    if not payment:
+    payment = Payment.query.filter_by(bank_payment_id=bank_payment_id).first()
+    if not payment or payment.paid:
       return jsonify({"error": "Payment not found"}), 404
+    if payment.expiration_date < datetime.now():
+      return jsonify({"error": "Payment expired"}), 400
+    amount = to_small_unit(Decimal(data.get('amount')))
+    if amount != payment.amount:
+      return jsonify({"error": "Invalid payment data"}), 400
     payment.paid = True
     db.session.commit()
   except Exception as e:
