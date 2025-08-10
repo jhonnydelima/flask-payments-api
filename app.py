@@ -5,11 +5,13 @@ from datetime import datetime, timedelta
 from utils.money_utils import to_small_unit, from_small_unit
 from decimal import Decimal
 from payments.pix import Pix
+from flask_socketio import SocketIO
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'SECRET_KEY_12345'
 db.init_app(app)
+socketio = SocketIO(app)
 
 APP_HOST = 'http://127.0.0.1:5000'
 
@@ -65,7 +67,8 @@ def get_payment_pix_page(payment_id):
     template,
     payment_id=payment_id,
     amount=from_small_unit(payment.amount),
-    qr_code_url=f"{APP_HOST}/payments/pix/qr_code/{payment.qr_code}",
+    host=APP_HOST,
+    qr_code=payment.qr_code,
   )
 
 @app.route('/payments/pix/qr_code/<file_name>', methods=['GET'])
@@ -75,5 +78,9 @@ def get_qr_code_image(file_name):
   except Exception as e:
     return jsonify({"error": str(e)}), 500
 
+@socketio.on('connect')
+def handle_connect():
+  print('Client connected to the server')
+
 if __name__ == '__main__':
-  app.run(debug=True)
+  socketio.run(app, debug=True)
