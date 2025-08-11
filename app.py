@@ -55,6 +55,7 @@ def confirm_payment_pix():
       return jsonify({"error": "Invalid payment data"}), 400
     payment.paid = True
     db.session.commit()
+    socketio.emit(f'payment-confirmed-{payment.id}')
   except Exception as e:
     return jsonify({"error": str(e)}), 500
   else:
